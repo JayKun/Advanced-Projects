@@ -16,10 +16,6 @@ struct Data
 };
 
 Data packetReceived; //send yes or no back to teensy
-SoftwareSerial SSerial(3, 4); //RX (receive), TX (transmit)
-
-char r[sizeof(Data)]; //buffer, array of bytes
-
   
 void setup() {
   // put your setup code here, to run once:
@@ -38,7 +34,6 @@ void setup() {
   pinMode(ButtonG, INPUT);
   
   Serial.begin(9600);
-  SSerial.begin(9600);
 }
 
 void loop() {
@@ -47,37 +42,41 @@ void loop() {
   if(Serial.available())
 {
   
-  //something is received
+  // something is received
   Serial.readBytes((char*) &packetReceived, sizeof(Data));
- // memcpy(&packetReceived, r, sizeof(Data)); //below line is better approach?
+  //memcpy(&packetReceived, r, sizeof(Data)); //below line is better approach?
   //Serial.println((char *)packetReceived.c);
   //packetReceived = (Data)r; //this won't work***HELP  
-  for(int i = 0 ; i < packetReceived.len; i++)
+
+  Serial.println(packetReceived.len);
+  
+  for(int i = 0; i < packetReceived.len; i++)
   {
     char lightColor = packetReceived.c[i]; 
     char buttonColor; 
     int ButtonRIn;
     int ButtonYIn;
     int ButtonGIn;
-
-        ButtonRIn = digitalRead(ButtonR);
-        //delay(300); 
-        ButtonYIn = digitalRead(ButtonY);
-        //delay(300); 
-        ButtonGIn = digitalRead(ButtonG);
-        //delay(300); 
+  
+    ButtonRIn = digitalRead(ButtonR);
+    //delay(300); 
+    ButtonYIn = digitalRead(ButtonY);
+    //delay(300); 
+    ButtonGIn = digitalRead(ButtonG);
+    //delay(300); 
       
       while(ButtonRIn == LOW && ButtonYIn == LOW && ButtonGIn == LOW)
       {
         ButtonRIn = digitalRead(ButtonR);
         //delay(100); 
         ButtonYIn = digitalRead(ButtonY);
-       // delay(100); 
-        ButtonGIn = digitalRead(ButtonG);
         //delay(100); 
+        ButtonGIn = digitalRead(ButtonG);
+        //delay(100);
       }
-      
 
+      while(digitalRead(ButtonR)== HIGH || digitalRead(ButtonY) == HIGH || digitalRead(ButtonG) == HIGH)
+      {;}
       if ((ButtonRIn == HIGH && lightColor == 'R') || 
           (ButtonYIn == HIGH && lightColor == 'Y') ||
           (ButtonGIn == HIGH && lightColor == 'G'))
@@ -92,6 +91,5 @@ void loop() {
   Serial.write('C'); 
 }
 
- }
- 
+}
 
