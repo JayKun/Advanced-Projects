@@ -17,11 +17,14 @@ void setup() {
   Serial.begin(9600); 
   radio.setChannel(23);
   radio.setPALevel(RF24_PA_MIN);
-  radio.openWritingPipe(pipes[]); 
-  //radio.openReadingPipe(1, pipes[1]);
+  radio.openWritingPipe(pipes[1]); 
+  printf_begin(); 
+  radio.printDetails();
+  radio.openReadingPipe(1, pipes[0]);
+  radio.startListening(); 
 }
 
 void loop() {
-  char c = "m"; 
-  radio.write((char*) &c, 1);
+  uint8_t c = "m"; 
+  radio.write((uint8_t*) &c, 1);
 }
