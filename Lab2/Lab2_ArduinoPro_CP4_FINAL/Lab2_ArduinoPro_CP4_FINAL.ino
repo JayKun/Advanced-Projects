@@ -26,12 +26,15 @@ bool lost = false;
 void setup() {
   // put your setup code here, to run once:
   radio.begin(); 
+  printf_begin();
+  delay(1000); 
+  
   Serial.begin(9600); 
   radio.setChannel(23);
   radio.setPALevel(RF24_PA_MIN);
   radio.openWritingPipe(pipes[1]); 
   radio.openReadingPipe(1, pipes[0]);
-
+  radio.setCRCLength(RF24_CRC_16);
   pinMode(ButtonR, INPUT);
   pinMode(ButtonY, INPUT);
   pinMode(ButtonG, INPUT);
@@ -41,10 +44,12 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  radio.printDetails();
   radio.startListening();
 
   while(!radio.available())
-  {Serial.println("Waiting for Sequence");}
+  {//Serial.println("Waiting for Sequence")
+  ;}
   
   if(radio.available())
 {

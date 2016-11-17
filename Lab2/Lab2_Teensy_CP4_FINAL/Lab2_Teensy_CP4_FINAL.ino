@@ -44,7 +44,9 @@ void setup() {
   radio.setPALevel(RF24_PA_MIN);
   radio.openWritingPipe(pipes[0]); 
   radio.openReadingPipe(1, pipes[1]);
-
+  printf_begin();
+  delay(1000); 
+  radio.printDetails();
   // old game code
   pinMode(RLED, OUTPUT);
   pinMode(YLED, OUTPUT);
