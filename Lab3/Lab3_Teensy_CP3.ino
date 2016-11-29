@@ -32,12 +32,12 @@ void loop() {
   if(radio.available())
   {
     while(radio.available()){
-      radio.read((Data*)packet, sizeof(packet)); 
+      radio.read((Data*)&packet, sizeof(packet)); 
       }
-    }
+  }
     Serial.print("Button Left: ");
-    Serial.println(packet.ButtonLeft);
+    Serial.println(packet.buttonLeft);
     Serial.print("Button Right: ");
-    Serial.println(packet.ButtonRight);
+    Serial.println(packet.buttonRight);
 }
-}
+
