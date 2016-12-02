@@ -38,7 +38,7 @@
 #define SETUP_AW    0x03
 #define NRF_STATUS  0x07
 #define FIFO_STATUS 0x17
-
+    
 // TODO: END HERE
 
 #define EN_RXADDR   0x02
