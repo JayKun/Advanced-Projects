@@ -1,4 +1,31 @@
-#include <Wire.h>
+#include <Wire.h> // for communication between Arduino and MPU
+#include <SPI.h>
+#include "nRF24L01.h"
+#include "printf.h"
+#include "RF24.h"
+#include "RF24_config.h"
+
+struct Data
+{
+  uint16_t ax, ay, az;
+  uint16_t gx, gy, gz;
+};
+
+uint64_t pipes[2] = {0xc2c2c2c2c2, 0xe7e7e7e7e7};
+RF24 radio(9, 10);
+Data packet;
+
+void initRadio() {
+  radio.begin();
+  radio.setPALevel(RF24_PA_MIN);
+  radio.setCRCLength(RF24_CRC_16);
+  radio.setPayloadSize(12);
+  radio.openWritingPipe(pipes[1]);
+  radio.openReadingPipe(1, pipes[0]);
+  radio.setChannel(23);
+  delay(1000);
+  radio.printDetails();
+}
 
 typedef enum : uint8_t
 {
@@ -33,20 +60,20 @@ void setSleep(bool enable)
   Wire.endTransmission(true);
 }
 
-void getAccelData(int16_t* ax, int16_t* ay, int16_t* az)
+void getAccelData(uint16_t* ax, uint16_t* ay, uint16_t* az)
 {
   // x-direction
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x3B); 
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU_addr, 2, true); 
-  *ax = Wire.read() << 8 | Wire.read(); 
+  Wire.requestFrom(MPU_addr, 2, true); // reading two bytes, stored in 3B and 3C
+  *ax = Wire.read() << 8 | Wire.read(); // most significant 8 bits from h register, least significant 8 bits from l register
 
-   // y-direction
+  // y-direction
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x3D); 
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU_addr, 2, true); 
+  Wire.requestFrom(MPU_addr, 2, true);
   *ay = Wire.read() << 8 | Wire.read(); 
 
   // z-direction
@@ -57,16 +84,16 @@ void getAccelData(int16_t* ax, int16_t* ay, int16_t* az)
   *az = Wire.read() << 8 | Wire.read(); 
 }
 
-void getGyroData( int16_t* gx,int16_t* gy, int16_t* gz)
+void getGyroData(uint16_t* gx,uint16_t* gy, uint16_t* gz)
 {
-    // x-direction
+  // x-direction
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x43); 
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr, 2, true); 
   *gx = Wire.read() << 8 | Wire.read(); 
 
-   // y-direction
+  // y-direction
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x45); 
   Wire.endTransmission(false);
@@ -84,8 +111,8 @@ void getGyroData( int16_t* gx,int16_t* gy, int16_t* gz)
 
 void setGyroPrec(uint8_t prec)
 {
-  prec&= 0b11;
-  prec = prec << 3;
+  prec&= 0b11; // ensure 2-bit value
+  prec = prec << 3; // setting 2 precision bits in 3rd and 4th bits
   Wire.beginTransmission(MPU_addr); 
   Wire.write(0x1B);
   Wire.write(prec);
@@ -101,41 +128,53 @@ void setAccelPrec(uint8_t prec)
   Wire.write(prec);
   Wire.endTransmission(true);
 }
-
-// int16_t cal_ax, cal_ay, cal_az; 
-//  int16_t cal_gx, cal_gy, cal_gz; 
-//  getAccelData(&ax, &ay, &az); 
-//  getGyroData(&gx, &gy, &gz); 
-
+  
 void setup() {
   Wire.begin();
   setSleep(false);
   setGyroPrec(GYRO_PREC_1000); 
-  setAccelPrec(ACCEL_PREC_8); 
+  setAccelPrec(ACCEL_PREC_2); 
+  
   Serial.begin(9600); 
+  initRadio();
 }
 
 void loop() {
-  int16_t ax, ay, az; 
-  int16_t gx, gy, gz; 
-  getAccelData(&ax, &ay, &az); 
-  getGyroData(&gx, &gy, &gz); 
 
-  Serial.print("Acceleration Data (x,y,z): "); 
-  Serial.print(ax);
-  Serial.print(" "); 
-  Serial.print(ay);
-  Serial.print(" "); 
+  getAccelData(&(packet.ax), &(packet.ay), &(packet.az)); 
+  getGyroData(&(packet.gx), &(packet.gy), &(packet.gz)); 
+
+  radio.write((Data*)&packet, sizeof(packet));
+
+  /* Serial.println("Acceleration Data: "); 
+  Serial.print("ax-direction: ");
+  Serial.println(ax);
+  
+  delay(1000); 
+  
+  Serial.print("ay-direction: ");
+  Serial.println(ay);
+  
+  delay(1000); 
+  
+  Serial.print("az-direction: ");
   Serial.println(az);
+  
+  delay(1000); 
 
-
-  Serial.print("Gyroscope Data (x,y,z):    ");
-  Serial.print(gx);
-  Serial.print(" "); 
-  Serial.print(gy);
-  Serial.print(" "); 
+  Serial.println("Gyro Data: ");
+  Serial.print("gx-direction: ");
+  Serial.println(gx);
+  
+  delay(1000); 
+  
+  Serial.print("gy-direction: ");
+  Serial.println(gy);
+  
+  delay(1000); 
+  
+  Serial.print("gz-direction: ");
   Serial.println(gz);
-  Serial.println(" ");
-
-  delay(1000);  
+  
+  delay(1000); */
 }
