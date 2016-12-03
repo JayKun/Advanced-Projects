@@ -1,4 +1,36 @@
 #include <Wire.h>
+#include <SPI.h>
+#include "nRF24L01.h"
+#include "printf.h"
+#include "RF24.h"
+#include "RF24_config.h"
+
+#define buttonL 2
+#define buttonR A3
+#define sensorPin A0
+
+struct Data
+{
+ int16_t ax, ay, az;
+ uint8_t buttonLeft; 
+ uint8_t buttonRight;
+ // uint8_t batteryLevel; 
+};
+ 
+Data packet; 
+uint64_t pipes[2] ={0xc2c2c2c2c2, 0xe7e7e7e7e7}; 
+RF24 radio(9, 10);
+
+void initRadio()
+{
+  radio.begin();
+  radio.setChannel(23);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.setCRCLength(RF24_CRC_16);
+  radio.setPayloadSize(8);
+  radio.openWritingPipe(pipes[1]); 
+  radio.openReadingPipe(1, pipes[0]);
+}
 
 typedef enum : uint8_t
 {
@@ -39,34 +71,22 @@ void getAccelData(int16_t* ax, int16_t* ay, int16_t* az)
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x3B); 
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU_addr, 2, true); 
+  Wire.requestFrom(MPU_addr, 6, true); 
   *ax = Wire.read() << 8 | Wire.read(); 
-
-   // y-direction
-  Wire.beginTransmission(MPU_addr);
-  Wire.write(0x3D); 
-  Wire.endTransmission(false);
-  Wire.requestFrom(MPU_addr, 2, true); 
   *ay = Wire.read() << 8 | Wire.read(); 
-
-  // z-direction
-  Wire.beginTransmission(MPU_addr);
-  Wire.write(0x3F); 
-  Wire.endTransmission(false);
-  Wire.requestFrom(MPU_addr, 2, true); 
   *az = Wire.read() << 8 | Wire.read(); 
 }
 
-void getGyroData( int16_t* gx,int16_t* gy, int16_t* gz)
+void getGyroData(int16_t* gx,int16_t* gy, int16_t* gz)
 {
-    // x-direction
+  // x-direction
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x43); 
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr, 2, true); 
   *gx = Wire.read() << 8 | Wire.read(); 
 
-   // y-direction
+  // y-direction
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x45); 
   Wire.endTransmission(false);
@@ -102,40 +122,77 @@ void setAccelPrec(uint8_t prec)
   Wire.endTransmission(true);
 }
 
-// int16_t cal_ax, cal_ay, cal_az; 
-//  int16_t cal_gx, cal_gy, cal_gz; 
-//  getAccelData(&ax, &ay, &az); 
-//  getGyroData(&gx, &gy, &gz); 
+int16_t cal_ax = 0, cal_ay = 0, cal_az = 0; 
+int16_t ax = 0, ay = 0, az = 0; 
+
+void sensorCalibration() {
+  int16_t calibration_ax = 0;
+  int16_t calibration_ay = 0;
+  int16_t calibration_az = 0;
+  
+  for (int i = 0; i < 100; i++) {
+    getAccelData(&calibration_ax, &calibration_ay, &calibration_az);
+    cal_ax += calibration_ax;
+    cal_ay += calibration_ay;
+    cal_az += calibration_az;
+  }
+
+  cal_ax /= 100;
+  cal_ay /= 100;
+  cal_az /= 100;
+}
+
 
 void setup() {
   Wire.begin();
   setSleep(false);
   setGyroPrec(GYRO_PREC_1000); 
-  setAccelPrec(ACCEL_PREC_8); 
+  setAccelPrec(ACCEL_PREC_2); 
   Serial.begin(9600); 
+  initRadio(); 
+  printf_begin(); 
+  radio.printDetails();
+  getAccelData(&cal_ax, &cal_ay, &cal_az); 
+  //sensorCalibration();
 }
 
-void loop() {
-  int16_t ax, ay, az; 
-  int16_t gx, gy, gz; 
-  getAccelData(&ax, &ay, &az); 
-  getGyroData(&gx, &gy, &gz); 
 
+void loop() {
+
+  // button presses
+
+  int leftReading = digitalRead(buttonL); 
+  int rightReading = digitalRead(buttonR);
+
+  if (leftReading == HIGH) {
+    packet.buttonLeft = 'H';
+  }
+
+  if (rightReading == HIGH) {
+    packet.buttonRight = 'H';
+  }
+
+  // mouse moving
+  
+  getAccelData(&ax, &ay, &az); 
+  
+  ax = ax - cal_ax; 
+  ay = ay - cal_ay; 
+  az = az - cal_az; 
+
+  
+  packet.ax = ax; 
+  packet.ay = ay;
+  packet.az = az; 
+  
   Serial.print("Acceleration Data (x,y,z): "); 
   Serial.print(ax);
   Serial.print(" "); 
   Serial.print(ay);
   Serial.print(" "); 
   Serial.println(az);
+  radio.write((Data*)&packet, sizeof(packet));
 
-
-  Serial.print("Gyroscope Data (x,y,z):    ");
-  Serial.print(gx);
-  Serial.print(" "); 
-  Serial.print(gy);
-  Serial.print(" "); 
-  Serial.println(gz);
-  Serial.println(" ");
-
-  delay(1000);  
+  packet.buttonLeft = 'L';
+  packet.buttonRight = 'L';
 }
