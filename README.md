@@ -1,8 +1,7 @@
 <h1>Advanced Projects</h1>
-<h2>Schematic Design -- Status Update</h2>
-<p>We are currently at Checkpoint 3 -- communication between two boards using the RF modules through structs.
-  If you look at the code we just uploaded, we called all the function required to initialize the RF24 object in setup().
-  The code is similar for both the Arduino and the Teensy. The Teensy is responsible to listen for anything that is transmitted by the Arduino.
-  <a>http://tmrh20.github.io/RF24/classRF24.html</a> This website contains basic documentation of all the functions in the RF24 library.
+<h2>Air Mouse</h2>
+<p>
+ Air Mouse is a PC mouse that functions just like your ordinary PC mouse but can be used without operating it on a level surface. 
+ Instead, the Air Mouse is controlled by a gyrometer on an IMU sensor (Inertial Measurement Unit).
 </p>
 
