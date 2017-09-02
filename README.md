@@ -6,7 +6,7 @@
 </p>
 
 <h2>Stage 1 - Serial Communication</h2>
-<h3>Wack-A-Mole<h3>/
+<h3>Wack-A-Mole</h3>
 In this lab, utilizng both an Arduino Pro Mini and Teensy LC,  we implemented a simple game that utilizes the serial communication.
 The Teensy LC is tasked to record button presses while the Arduino receives the button presses and verifies the pattern.
 
